@@ -915,8 +915,6 @@ button.ui-state-hover .ui-button-text {
 .s-ColumnPickerDialog .column-list {
   flex: 1 1 50%;
   margin: 6px;
-  display: flex;
-  flex-direction: column;
 }
 .s-ColumnPickerDialog .column-list ul {
   padding-left: 0;
@@ -2111,6 +2109,20 @@ a.s-LinkDropDown input {
   padding: 3px 6px;
   margin: 8px 8px 4px 0px;
   clear: both;
+}
+.s-PropertyGrid .category.collapsible .category-title {
+  cursor: pointer;
+}
+.s-PropertyGrid .category.collapsed .field {
+  visibility: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+.s-PropertyGrid .category-title i.fa {
+  float: right;
+  font-size: 14px;
 }
 .s-PropertyGrid .category-title a {
   color: #6090c0;

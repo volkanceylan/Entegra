@@ -511,6 +511,27 @@ declare namespace Q {
 declare namespace Q {
     function prop(type: any, name: string, getter?: string, setter?: string): void;
 }
+declare namespace Q {
+    namespace Authorization {
+        function hasPermission(permission: string): boolean;
+        function validatePermission(permission: string): void;
+    }
+    namespace Authorization {
+        let isLoggedIn: boolean;
+        let username: string;
+        let userDefinition: Serenity.UserDefinition;
+    }
+}
+declare namespace Serenity {
+    interface UserDefinition {
+        Username?: string;
+        DisplayName?: string;
+        IsAdmin?: boolean;
+        Permissions?: {
+            [key: string]: boolean;
+        };
+    }
+}
 declare namespace Serenity {
     class ColumnsKeyAttribute {
         value: string;
@@ -708,9 +729,11 @@ declare namespace Serenity {
         constructor(grid: IDataGrid);
         clear(): void;
         resetCheckedAndRefresh(): void;
+        selectKeys(keys: string[]): void;
         getSelectedKeys(): string[];
         getSelectedAsInt32(): number[];
         getSelectedAsInt64(): number[];
+        setSelectedKeys(keys: string[]): void;
         static createSelectColumn(getMixin: () => GridRowSelectionMixin): Slick.Column;
     }
     namespace GridSelectAllButtonHelper {
@@ -781,6 +804,7 @@ declare namespace Serenity {
         function setDisabled(tabs: JQuery, tabKey: string, isDisabled: boolean): void;
         function activeTabKey(tabs: JQuery): string;
         function indexByKey(tabs: JQuery): any;
+        function selectTab(tabs: JQuery, tabKey: string): void;
     }
 }
 declare namespace Serenity {
@@ -824,6 +848,46 @@ declare namespace Serenity {
         function addValidationRule(element: JQuery, eventClass: string, rule: (p1: JQuery) => string): JQuery;
         function removeValidationRule(element: JQuery, eventClass: string): JQuery;
         function validateElement(validator: JQueryValidation.Validator, widget: Serenity.Widget<any>): boolean;
+    }
+}
+declare namespace Serenity {
+    class Widget<TOptions> {
+        private static nextWidgetNumber;
+        element: JQuery;
+        protected options: TOptions;
+        protected widgetName: string;
+        protected uniqueName: string;
+        protected asyncPromise: PromiseLike<void>;
+        constructor(element: JQuery, options?: TOptions);
+        destroy(): void;
+        protected addCssClass(): void;
+        protected getCssClass(): string;
+        protected initializeAsync(): PromiseLike<void>;
+        protected isAsyncWidget(): boolean;
+        static getWidgetName(type: Function): string;
+        static elementFor<TWidget>(editorType: {
+            new (...args: any[]): TWidget;
+        }): JQuery;
+        static create<TWidget extends Widget<TOpt>, TOpt>(params: CreateWidgetParams<TWidget, TOpt>): TWidget;
+        init(action?: (widget: any) => void): this;
+        private initialize();
+    }
+    interface Widget<TOptions> {
+        addValidationRule(eventClass: string, rule: (p1: JQuery) => string): JQuery;
+        getGridField(): JQuery;
+        change(handler: (e: JQueryEventObject) => void): void;
+        changeSelect2(handler: (e: JQueryEventObject) => void): void;
+    }
+}
+declare namespace Serenity {
+    class TemplatedWidget<TOptions> extends Widget<TOptions> {
+        protected idPrefix: string;
+        private static templateNames;
+        constructor(container: JQuery, options?: TOptions);
+        protected byId(id: string): JQuery;
+        private byID<TWidget>(id, type);
+        protected getTemplateName(): string;
+        protected getTemplate(): string;
     }
 }
 declare namespace Serenity {
@@ -1003,6 +1067,177 @@ declare namespace Serenity {
     }
 }
 declare namespace Serenity {
+    class CheckTreeEditor<TItem, TOptions> extends DataGrid<TItem, TOptions> {
+        constructor(input: JQuery, opt?: TOptions);
+        protected getTreeItems(): TItem[];
+        protected updateItems(): void;
+        protected itemSelectedChanged(item: TItem): void;
+        protected getSelectAllText(): string;
+        protected isThreeStateHierarchy(): boolean;
+        protected getInitialCollapse(): boolean;
+        protected updateSelectAll(): void;
+        protected updateFlags(): void;
+        protected getDescendantsSelected(item: TItem): boolean;
+        protected allDescendantsSelected(item: TItem): boolean;
+        protected getItemText(ctx: Slick.FormatterContext): string;
+        protected sortItems(): void;
+        protected moveSelectedUp(): boolean;
+        value: string[];
+    }
+}
+declare namespace Serenity {
+    class DateEditor extends Widget<any> {
+        constructor(input: JQuery);
+        static dateInputChange(e: any): void;
+        static dateInputKeyup(e: any): void;
+        static defaultAutoNumericOptions(): any;
+        value: string;
+        valueAsDate: Date;
+        get_readOnly(): boolean;
+        set_readOnly(value: boolean): void;
+        get_minValue(): string;
+        set_minValue(value: string): void;
+        get_maxValue(): string;
+        set_maxValue(value: string): void;
+        get_minDate(): Date;
+        set_minDate(value: Date): void;
+        get_maxDate(): Date;
+        set_maxDate(value: Date): void;
+        get_sqlMinMax(): boolean;
+        set_sqlMinMax(value: boolean): void;
+    }
+}
+declare namespace Serenity {
+    class DateTimeEditor extends Widget<DateTimeEditorOptions> {
+        constructor(input: JQuery, opt: DateTimeEditorOptions);
+        static roundToMinutes(date: Date, minutesStep: number): Date;
+        value: string;
+        valueAsDate: Date;
+        get_minValue(): string;
+        set_minValue(value: string): void;
+        get_maxValue(): string;
+        set_maxValue(value: string): void;
+        get_minDate(): Date;
+        set_minDate(value: Date): void;
+        get_maxDate(): Date;
+        set_maxDate(value: Date): void;
+        get_sqlMinMax(): boolean;
+        set_sqlMinMax(value: boolean): void;
+        get_readOnly(): boolean;
+        set_readOnly(value: boolean): void;
+    }
+    interface DateTimeEditorOptions {
+        startHour?: any;
+        endHour?: any;
+        intervalMinutes?: any;
+    }
+}
+declare namespace Serenity {
+    class DateYearEditor extends SelectEditor {
+        constructor(hidden: JQuery, opt: DateYearEditorOptions);
+    }
+    interface DateYearEditorOptions extends SelectEditorOptions {
+        minYear?: string;
+        maxYear?: string;
+        descending?: boolean;
+    }
+}
+declare namespace Serenity {
+    class DecimalEditor extends Widget<DecimalEditorOptions> {
+        constructor(input: JQuery, opt?: DecimalEditorOptions);
+        static defaultAutoNumericOptions(): any;
+        value: number;
+        get_isValid(): boolean;
+    }
+    interface DecimalEditorOptions {
+        minValue?: string;
+        maxValue?: string;
+        decimals?: any;
+        padDecimals?: any;
+    }
+}
+declare namespace Serenity {
+    class LookupEditorBase<TOptions extends LookupEditorOptions, TItem> extends Select2Editor<TOptions, TItem> {
+        constructor(input: JQuery, opt?: TOptions);
+        protected cascadeItems(items: TItem[]): TItem[];
+        protected filterItems(items: TItem[]): TItem[];
+        protected getCasecadeFromValue(parent: Widget<any>): any;
+        protected getItems(lookup: Q.Lookup<TItem>): TItem[];
+        protected getItemText(item: TItem, lookup: Q.Lookup<TItem>): string;
+        protected getItemDisabled(item: TItem, lookup: Q.Lookup<TItem>): boolean;
+        protected getLookup(): Q.Lookup<TItem>;
+        protected getLookupKey(): string;
+        protected initNewEntity(entity: TItem): void;
+        protected updateItems(): void;
+        protected getDialogTypeKey(): string;
+        protected createEditDialog(callback: (dlg: Serenity.IEditDialog) => void): void;
+        onInitNewEntity: (entity: TItem) => void;
+        value: string;
+        cascadeField: string;
+        cascadeFrom: string;
+        cascadeValue: any;
+        filterField: string;
+        filterValue: any;
+    }
+    interface LookupEditorOptions {
+        lookupKey?: string;
+        minimumResultsForSearch?: any;
+        inplaceAdd?: boolean;
+        dialogType?: string;
+        cascadeFrom?: string;
+        cascadeField?: string;
+        cascadeValue?: any;
+        filterField?: string;
+        filterValue?: any;
+        multiple?: boolean;
+        delimited?: boolean;
+    }
+    class LookupEditor extends LookupEditorBase<LookupEditorOptions, any> {
+        constructor(input: JQuery, opt?: LookupEditorOptions);
+    }
+}
+declare namespace Serenity {
+    interface FilterOperator {
+        key?: string;
+        title?: string;
+        format?: string;
+    }
+}
+declare namespace Serenity {
+    namespace FilterOperators {
+        let isTrue: string;
+        let isFalse: string;
+        let contains: string;
+        let startsWith: string;
+        let EQ: string;
+        let NE: string;
+        let GT: string;
+        let GE: string;
+        let LT: string;
+        let LE: string;
+        let BW: string;
+        let IN: string;
+        let isNull: string;
+        let isNotNull: string;
+        let toCriteriaOperator: {
+            [key: string]: string;
+        };
+    }
+}
+declare namespace Serenity {
+    interface FilterLine {
+        field?: string;
+        operator?: string;
+        isOr?: boolean;
+        leftParen?: boolean;
+        rightParen?: boolean;
+        validationError?: string;
+        criteria?: any[];
+        displayText?: string;
+        state?: any;
+    }
+}
+declare namespace Serenity {
     interface IFiltering {
         createEditor(): void;
         getCriteria(displayText: any): any[];
@@ -1016,20 +1251,8 @@ declare namespace Serenity {
         get_operator(): FilterOperator;
         set_operator(value: FilterOperator): void;
     }
-    class FilterPanel extends FilterWidgetBase<any> {
-        static panelTemplate: string;
-        static rowTemplate: string;
-        constructor(div: JQuery);
-        updateRowsFromStore(): void;
-        search(): void;
-        get_showInitialLine(): boolean;
-        set_showInitialLine(value: boolean): void;
-        get_showSearchButton(): boolean;
-        set_showSearchButton(value: boolean): void;
-        get_updateStoreOnReset(): boolean;
-        set_updateStoreOnReset(value: boolean): void;
-        get_hasErrors(): boolean;
-    }
+}
+declare namespace Serenity {
     class FilterStore {
         constructor(fields: any);
         raiseChanged(): void;
@@ -1041,14 +1264,8 @@ declare namespace Serenity {
         get_activeCriteria(): any[];
         get_displayText(): string;
     }
-    class FilterWidgetBase<TOptions> extends TemplatedWidget<TOptions> {
-        constructor(div: JQuery, opt: any);
-        filterStoreChanged(): void;
-        get_store(): FilterStore;
-        set_store(value: FilterStore): void;
-    }
-    class LookupFiltering extends BaseEditorFiltering<LookupEditor> {
-    }
+}
+declare namespace Serenity {
     class BaseFiltering {
         getOperators(): FilterOperator[];
         appendNullableOperators(list: FilterOperator[]): FilterOperator[];
@@ -1073,6 +1290,32 @@ declare namespace Serenity {
         get_operator(): FilterOperator;
         set_operator(value: FilterOperator): void;
     }
+}
+declare namespace Serenity {
+    class StringFiltering extends BaseFiltering {
+    }
+}
+declare namespace Serenity {
+    class BaseEditorFiltering<TEditor> extends BaseFiltering {
+        editor: Serenity.Widget<any>;
+        useEditor(): boolean;
+        useIdField(): boolean;
+        getEditorOptions(): any;
+    }
+}
+declare namespace Serenity {
+    class DateFiltering extends BaseEditorFiltering<DateEditor> {
+    }
+}
+declare namespace Serenity {
+    class DateTimeFiltering extends BaseEditorFiltering<DateEditor> {
+    }
+}
+declare namespace Serenity {
+    class DecimalFiltering extends BaseEditorFiltering<DecimalEditor> {
+    }
+}
+declare namespace Serenity {
     class EditorFiltering extends BaseEditorFiltering<Serenity.Widget<any>> {
         get_editorType(): string;
         set_editorType(value: string): void;
@@ -1081,30 +1324,48 @@ declare namespace Serenity {
         get_useLike(): boolean;
         set_useLike(value: boolean): void;
     }
-    class StringFiltering extends BaseFiltering {
+}
+declare namespace Serenity {
+    class LookupFiltering extends BaseEditorFiltering<LookupEditor> {
     }
-    class FilterDialog extends TemplatedDialog<any> {
-        get_filterPanel(): FilterPanel;
-    }
-    class FilterDisplayBar extends FilterWidgetBase<any> {
-        constructor(div: JQuery);
-    }
+}
+declare namespace Serenity {
     namespace FilteringTypeRegistry {
         function get(key: string): Function;
         function initialize(): void;
         function reset(): void;
     }
-    interface FilterLine {
-        field?: string;
-        operator?: string;
-        isOr?: boolean;
-        leftParen?: boolean;
-        rightParen?: boolean;
-        validationError?: string;
-        criteria?: any[];
-        displayText?: string;
-        state?: any;
+}
+declare namespace Serenity {
+    class FilterWidgetBase<TOptions> extends TemplatedWidget<TOptions> {
+        constructor(div: JQuery, opt: any);
+        filterStoreChanged(): void;
+        get_store(): FilterStore;
+        set_store(value: FilterStore): void;
     }
+}
+declare namespace Serenity {
+    class FilterDisplayBar extends FilterWidgetBase<any> {
+        constructor(div: JQuery);
+    }
+}
+declare namespace Serenity {
+    class FilterPanel extends FilterWidgetBase<any> {
+        static panelTemplate: string;
+        static rowTemplate: string;
+        constructor(div: JQuery);
+        updateRowsFromStore(): void;
+        search(): void;
+        get_showInitialLine(): boolean;
+        set_showInitialLine(value: boolean): void;
+        get_showSearchButton(): boolean;
+        set_showSearchButton(value: boolean): void;
+        get_updateStoreOnReset(): boolean;
+        set_updateStoreOnReset(value: boolean): void;
+        get_hasErrors(): boolean;
+    }
+}
+declare namespace Serenity {
     interface QuickFilterArgs<TWidget> {
         field?: string;
         widget?: TWidget;
@@ -1114,6 +1375,8 @@ declare namespace Serenity {
         active?: boolean;
         handled?: boolean;
     }
+}
+declare namespace Serenity {
     class QuickSearchInput extends Widget<QuickSearchInputOptions> {
         constructor(input: JQuery, opt: QuickSearchInputOptions);
         checkIfValueChanged(): void;
@@ -1129,10 +1392,13 @@ declare namespace Serenity {
     }
 }
 declare namespace Serenity {
-    namespace FormatterTypeRegistry {
-        function get(key: string): Function;
-        function initialize(): void;
-        function reset(): void;
+    class DateFormatter implements Slick.Formatter {
+        format(ctx: Slick.FormatterContext): string;
+        static format(value: any, format: string): string;
+        get_displayFormat(): string;
+        set_displayFormat(value: string): void;
+    }
+    class DateTimeFormatter extends DateFormatter {
     }
     class EnumFormatter implements Slick.Formatter {
         format(ctx: Slick.FormatterContext): string;
@@ -1175,11 +1441,13 @@ declare namespace Serenity {
         get_target(): string;
         set_target(value: string): void;
     }
+    namespace FormatterTypeRegistry {
+        function get(key: string): Function;
+        function initialize(): void;
+        function reset(): void;
+    }
 }
 declare namespace Serenity {
-    namespace EnumTypeRegistry {
-        function get(key: string): Function;
-    }
     class Flexify extends Widget<FlexifyOptions> {
         constructor(container: JQuery, options: FlexifyOptions);
     }
@@ -1196,61 +1464,25 @@ declare namespace Serenity {
         function flexXFactor(element: JQuery, flexX: number): JQuery;
         function flexYFactor(element: JQuery, flexY: number): JQuery;
     }
-    class IAsyncInit {
+}
+declare namespace Serenity {
+    namespace EnumTypeRegistry {
+        function get(key: string): Function;
     }
-    class IBooleanValue {
-    }
-    interface IBooleanValue {
-        get_value(): boolean;
-        set_value(value: boolean): void;
-    }
+}
+declare namespace Serenity {
     class IDialog {
     }
     interface IDialog {
         dialogOpen(): void;
     }
-    class IDoubleValue {
-    }
-    interface IDoubleValue {
-        get_value(): any;
-        set_value(value: any): void;
-    }
+}
+declare namespace Serenity {
     interface IEditDialog {
         load(entityOrId: any, done: () => void, fail: (p1: any) => void): void;
     }
-    class IGetEditValue {
-    }
-    interface IGetEditValue {
-        getEditValue(property: PropertyItem, target: any): void;
-    }
-    class IInitializeColumn {
-    }
-    interface IInitializeColumn {
-        initializeColumn(column: Slick.Column): void;
-    }
-    namespace CustomValidation {
-        function registerValidationMethods(): void;
-    }
-    type CustomValidationRule = (element: JQuery) => string;
-    interface IValidateRequired {
-        get_required(): boolean;
-        set_required(value: boolean): void;
-    }
-    interface DataChangeInfo {
-        type: string;
-        entityId: any;
-        entity: any;
-    }
-    namespace WX {
-        function getWidget<TWidget>(element: JQuery, type: Function): any;
-        function tryGetWidget(element: JQuery): any;
-        function getWidgetName(type: Function): string;
-        function hasOriginalEvent(e: any): boolean;
-        function change(widget: any, handler: any): void;
-        function changeSelect2(widget: any, handler: any): void;
-        function getGridField(widget: Serenity.Widget<any>): JQuery;
-        function create(initElement: (p1: JQuery) => void, options?: any): any;
-    }
+}
+declare namespace Serenity {
     namespace ReflectionOptionsSetter {
         function set(target: any, options: any): void;
     }
@@ -1272,31 +1504,8 @@ declare namespace Serenity {
         constructor(prefix: string);
         w(id: string, type: Function): any;
     }
-    class IStringValue {
-    }
-    interface IStringValue {
-        get_value(): string;
-        set_value(value: string): void;
-    }
     class StringEditor extends Widget<any> {
         value: string;
-    }
-    class CheckTreeEditor<TItem, TOptions> extends DataGrid<TItem, TOptions> {
-        constructor(input: JQuery, opt?: TOptions);
-        protected getTreeItems(): TItem[];
-        protected updateItems(): void;
-        protected itemSelectedChanged(item: TItem): void;
-        protected getSelectAllText(): string;
-        protected isThreeStateHierarchy(): boolean;
-        protected getInitialCollapse(): boolean;
-        protected updateSelectAll(): void;
-        protected updateFlags(): void;
-        protected getDescendantsSelected(item: TItem): boolean;
-        protected allDescendantsSelected(item: TItem): boolean;
-        protected getItemText(ctx: Slick.FormatterContext): string;
-        protected sortItems(): void;
-        protected moveSelectedUp(): boolean;
-        value: string[];
     }
     interface EmailEditorOptions {
         domain?: string;
@@ -1316,121 +1525,6 @@ declare namespace Serenity {
         constructor(input: JQuery);
         get_value(): string;
         set_value(value: string): void;
-    }
-    class DateEditor extends Widget<any> {
-        constructor(input: JQuery);
-        static dateInputChange(e: any): void;
-        static dateInputKeyup(e: any): void;
-        static defaultAutoNumericOptions(): any;
-        value: string;
-        valueAsDate: Date;
-        get_readOnly(): boolean;
-        set_readOnly(value: boolean): void;
-        get_minValue(): string;
-        set_minValue(value: string): void;
-        get_maxValue(): string;
-        set_maxValue(value: string): void;
-        get_minDate(): Date;
-        set_minDate(value: Date): void;
-        get_maxDate(): Date;
-        set_maxDate(value: Date): void;
-        get_sqlMinMax(): boolean;
-        set_sqlMinMax(value: boolean): void;
-    }
-    class DateFiltering extends BaseEditorFiltering<DateEditor> {
-    }
-    class DateFormatter implements Slick.Formatter {
-        format(ctx: Slick.FormatterContext): string;
-        static format(value: any, format: string): string;
-        get_displayFormat(): string;
-        set_displayFormat(value: string): void;
-    }
-    class DateTimeEditor extends Widget<DateTimeEditorOptions> {
-        constructor(input: JQuery, opt: DateTimeEditorOptions);
-        static roundToMinutes(date: Date, minutesStep: number): Date;
-        value: string;
-        valueAsDate: Date;
-        get_minValue(): string;
-        set_minValue(value: string): void;
-        get_maxValue(): string;
-        set_maxValue(value: string): void;
-        get_minDate(): Date;
-        set_minDate(value: Date): void;
-        get_maxDate(): Date;
-        set_maxDate(value: Date): void;
-        get_sqlMinMax(): boolean;
-        set_sqlMinMax(value: boolean): void;
-        get_readOnly(): boolean;
-        set_readOnly(value: boolean): void;
-    }
-    interface DateTimeEditorOptions {
-        startHour?: any;
-        endHour?: any;
-        intervalMinutes?: any;
-    }
-    class DateTimeFiltering extends BaseEditorFiltering<DateEditor> {
-    }
-    class DateTimeFormatter extends DateFormatter {
-    }
-    class DateYearEditor extends SelectEditor {
-        constructor(hidden: JQuery, opt: DateYearEditorOptions);
-    }
-    interface DateYearEditorOptions extends SelectEditorOptions {
-        minYear?: string;
-        maxYear?: string;
-        descending?: boolean;
-    }
-    class DecimalEditor extends Widget<DecimalEditorOptions> {
-        constructor(input: JQuery, opt?: DecimalEditorOptions);
-        static defaultAutoNumericOptions(): any;
-        value: number;
-        get_isValid(): boolean;
-    }
-    interface DecimalEditorOptions {
-        minValue?: string;
-        maxValue?: string;
-        decimals?: any;
-        padDecimals?: any;
-    }
-    class DecimalFiltering extends BaseEditorFiltering<DecimalEditor> {
-    }
-    interface LookupEditorOptions {
-        lookupKey?: string;
-        minimumResultsForSearch?: any;
-        inplaceAdd?: boolean;
-        dialogType?: string;
-        cascadeFrom?: string;
-        cascadeField?: string;
-        cascadeValue?: any;
-        filterField?: string;
-        filterValue?: any;
-        multiple?: boolean;
-        delimited?: boolean;
-    }
-    class LookupEditorBase<TOptions extends LookupEditorOptions, TItem> extends Select2Editor<TOptions, TItem> {
-        constructor(input: JQuery, opt?: TOptions);
-        protected cascadeItems(items: TItem[]): TItem[];
-        protected filterItems(items: TItem[]): TItem[];
-        protected getCasecadeFromValue(parent: Widget<any>): any;
-        protected getItems(lookup: Q.Lookup<TItem>): TItem[];
-        protected getItemText(item: TItem, lookup: Q.Lookup<TItem>): string;
-        protected getItemDisabled(item: TItem, lookup: Q.Lookup<TItem>): boolean;
-        protected getLookup(): Q.Lookup<TItem>;
-        protected getLookupKey(): string;
-        protected initNewEntity(entity: TItem): void;
-        protected updateItems(): void;
-        protected getDialogTypeKey(): string;
-        protected createEditDialog(callback: (dlg: Serenity.IEditDialog) => void): void;
-        onInitNewEntity: (entity: TItem) => void;
-        value: string;
-        cascadeField: string;
-        cascadeFrom: string;
-        cascadeValue: any;
-        filterField: string;
-        filterValue: any;
-    }
-    class LookupEditor extends LookupEditorBase<LookupEditorOptions, any> {
-        constructor(input: JQuery, opt?: LookupEditorOptions);
     }
     class AsyncLookupEditor extends LookupEditorBase<LookupEditorOptions, any> {
         constructor(hidden: JQuery, opt: LookupEditorOptions);
@@ -1566,36 +1660,6 @@ declare namespace Serenity {
     namespace CustomValidation {
         function registerValidationMethods(): void;
     }
-    class BaseEditorFiltering<TEditor> extends BaseFiltering {
-        editor: Serenity.Widget<any>;
-        useEditor(): boolean;
-        useIdField(): boolean;
-        getEditorOptions(): any;
-    }
-    interface FilterOperator {
-        key?: string;
-        title?: string;
-        format?: string;
-    }
-    namespace FilterOperators {
-        let isTrue: string;
-        let isFalse: string;
-        let contains: string;
-        let startsWith: string;
-        let eQ: string;
-        let nE: string;
-        let gT: string;
-        let gE: string;
-        let lT: string;
-        let lE: string;
-        let bW: string;
-        let iN: string;
-        let isNull: string;
-        let isNotNull: string;
-        let toCriteriaOperator: {
-            [key: string]: string;
-        };
-    }
     namespace DialogExtensions {
         function dialogFlexify(dialog: JQuery): JQuery;
         function dialogResizable(dialog: JQuery, w?: any, h?: any, mw?: any, mh?: any): JQuery;
@@ -1622,36 +1686,35 @@ declare namespace Serenity {
         function initialize(): void;
         function reset(): void;
     }
-    namespace Reporting {
-        class ReportDialog extends TemplatedDialog<ReportDialogOptions> {
-            constructor(opt: ReportDialogOptions);
-            createPropertyGrid(): void;
-            loadReport(reportKey: string): void;
-            executeReport(targetFrame: string, exportType: string): void;
-        }
-        interface ReportDialogOptions {
-            reportKey?: string;
-        }
-        interface ReportExecuteRequest extends ServiceRequest {
-            ExportType?: string;
-            ReportKey?: string;
-            DesignId?: string;
-            Parameters?: any;
-        }
-        class ReportPage extends Serenity.Widget<any> {
-            constructor(div: JQuery);
-        }
-        interface ReportRetrieveRequest extends ServiceRequest {
-            ReportKey?: string;
-        }
-        interface ReportRetrieveResponse extends ServiceResponse {
-            ReportKey?: string;
-            Properties?: PropertyItem[];
-            Title?: string;
-            InitialSettings?: any;
-            IsDataOnlyReport?: boolean;
-        }
+}
+declare namespace Serenity {
+    namespace WX {
+        function getWidget<TWidget>(element: JQuery, type: Function): any;
+        function tryGetWidget(element: JQuery): any;
+        function getWidgetName(type: Function): string;
+        function hasOriginalEvent(e: any): boolean;
+        function change(widget: any, handler: any): void;
+        function changeSelect2(widget: any, handler: any): void;
+        function getGridField(widget: Serenity.Widget<any>): JQuery;
+        function create(initElement: (p1: JQuery) => void, options?: any): any;
     }
+}
+declare namespace Serenity {
+    class IAsyncInit {
+    }
+}
+declare namespace Serenity {
+}
+declare namespace Serenity {
+}
+declare namespace Serenity {
+    class IGetEditValue {
+    }
+    interface IGetEditValue {
+        getEditValue(property: PropertyItem, target: any): void;
+    }
+}
+declare namespace Serenity {
 }
 declare namespace Serenity {
     interface PropertyItem {
@@ -1666,10 +1729,13 @@ declare namespace Serenity {
         maxLength?: number;
         required?: boolean;
         insertable?: boolean;
+        insertPermission?: string;
         hideOnInsert?: boolean;
         updatable?: boolean;
+        updatePermission?: string;
         hideOnUpdate?: boolean;
         readOnly?: boolean;
+        readPermission?: string;
         oneWay?: boolean;
         defaultValue?: any;
         localizable?: boolean;
@@ -1767,32 +1833,22 @@ declare namespace Serenity {
     }
 }
 declare namespace Serenity {
-    class Widget<TOptions> {
-        private static nextWidgetNumber;
-        element: JQuery;
-        protected options: TOptions;
-        protected widgetName: string;
-        protected uniqueName: string;
-        protected asyncPromise: PromiseLike<void>;
-        constructor(element: JQuery, options?: TOptions);
-        destroy(): void;
-        protected addCssClass(): void;
-        protected getCssClass(): string;
-        protected initializeAsync(): PromiseLike<void>;
-        protected isAsyncWidget(): boolean;
-        static getWidgetName(type: Function): string;
-        static elementFor<TWidget>(editorType: {
-            new (...args: any[]): TWidget;
-        }): JQuery;
-        static create<TWidget extends Widget<TOpt>, TOpt>(params: CreateWidgetParams<TWidget, TOpt>): TWidget;
-        init(action?: (widget: any) => void): this;
-        private initialize();
+    namespace CustomValidation {
+        function registerValidationMethods(): void;
     }
-    interface Widget<TOptions> {
-        addValidationRule(eventClass: string, rule: (p1: JQuery) => string): JQuery;
-        getGridField(): JQuery;
-        change(handler: (e: JQueryEventObject) => void): void;
-        changeSelect2(handler: (e: JQueryEventObject) => void): void;
+    type CustomValidationRule = (element: JQuery) => string;
+}
+declare namespace Serenity {
+    interface IValidateRequired {
+        get_required(): boolean;
+        set_required(value: boolean): void;
+    }
+}
+declare namespace Serenity {
+    interface DataChangeInfo {
+        type: string;
+        entityId: any;
+        entity: any;
     }
 }
 declare namespace Serenity {
@@ -1844,17 +1900,6 @@ declare namespace Serenity {
     }
 }
 declare namespace Serenity {
-    class TemplatedWidget<TOptions> extends Widget<TOptions> {
-        protected idPrefix: string;
-        private static templateNames;
-        constructor(container: JQuery, options?: TOptions);
-        protected byId(id: string): JQuery;
-        private byID<TWidget>(id, type);
-        protected getTemplateName(): string;
-        protected getTemplate(): string;
-    }
-}
-declare namespace Serenity {
     class TemplatedDialog<TOptions> extends TemplatedWidget<TOptions> {
         protected isPanel: boolean;
         protected responsive: boolean;
@@ -1902,6 +1947,18 @@ declare namespace Serenity {
         protected set_entityId(value: any): void;
         protected validateBeforeSave(): boolean;
         protected propertyGrid: Serenity.PropertyGrid;
+    }
+}
+declare namespace Serenity {
+    class FilterDialog extends TemplatedDialog<any> {
+        get_filterPanel(): FilterPanel;
+    }
+}
+declare namespace Serenity {
+    class IInitializeColumn {
+    }
+    interface IInitializeColumn {
+        initializeColumn(column: Slick.Column): void;
     }
 }
 declare namespace Serenity {
@@ -2157,6 +2214,38 @@ declare namespace Serenity {
     }
 }
 declare namespace Serenity {
+    namespace Reporting {
+        class ReportDialog extends TemplatedDialog<ReportDialogOptions> {
+            constructor(opt: ReportDialogOptions);
+            createPropertyGrid(): void;
+            loadReport(reportKey: string): void;
+            executeReport(targetFrame: string, exportType: string): void;
+        }
+        interface ReportDialogOptions {
+            reportKey?: string;
+        }
+        interface ReportExecuteRequest extends ServiceRequest {
+            ExportType?: string;
+            ReportKey?: string;
+            DesignId?: string;
+            Parameters?: any;
+        }
+        class ReportPage extends Serenity.Widget<any> {
+            constructor(div: JQuery);
+        }
+        interface ReportRetrieveRequest extends ServiceRequest {
+            ReportKey?: string;
+        }
+        interface ReportRetrieveResponse extends ServiceResponse {
+            ReportKey?: string;
+            Properties?: PropertyItem[];
+            Title?: string;
+            InitialSettings?: any;
+            IsDataOnlyReport?: boolean;
+        }
+    }
+}
+declare namespace Serenity {
     class ColumnPickerDialog extends Serenity.TemplatedDialog<any> {
         private ulVisible;
         private ulHidden;
@@ -2174,6 +2263,35 @@ declare namespace Serenity {
         protected setupColumns(): void;
         protected onDialogOpen(): void;
         protected getTemplate(): string;
+    }
+}
+declare namespace Serenity {
+    /**
+     * A mixin that can be applied to a DataGrid for tree functionality
+     */
+    class TreeGridMixin<TItem> {
+        private options;
+        private dataGrid;
+        private getId;
+        constructor(options: TreeGridMixinOptions<TItem>);
+        /**
+         * Expands / collapses all rows in a grid automatically
+         */
+        toggleAll(): void;
+        /**
+         * Reorders a set of items so that parents comes before their children.
+         * This method is required for proper tree ordering, as it is not so easy to perform with SQL.
+         * @param items list of items to be ordered
+         * @param getId a delegate to get ID of a record (must return same ID with grid identity field)
+         * @param getParentId a delegate to get parent ID of a record
+         */
+        static applyTreeOrdering<TItem>(items: TItem[], getId: (item: TItem) => any, getParentId: (item: TItem) => any): TItem[];
+    }
+    interface TreeGridMixinOptions<TItem> {
+        grid: Serenity.DataGrid<TItem, any>;
+        getParentId: (item: TItem) => any;
+        toggleField: string;
+        initialCollapse?: () => boolean;
     }
 }
 interface JQuery {
