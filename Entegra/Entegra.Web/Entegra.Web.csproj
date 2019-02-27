@@ -23,6 +23,7 @@
     <UseGlobalApplicationHostFile />
     <TypeScriptToolsVersion>2.0</TypeScriptToolsVersion>
     <TypeScriptCompileBlocked>True</TypeScriptCompileBlocked>
+    <Use64BitIISExpress />
   </PropertyGroup>
   <PropertyGroup>
     <TypeScriptTarget>ES5</TypeScriptTarget>
@@ -1114,10 +1115,6 @@
     <TypeScriptCompile Include="Modules\Administration\User\Authentication\Authorization.ts" />
     <TypeScriptCompile Include="Modules\Administration\User\UserGrid.ts" />
     <TypeScriptCompile Include="Modules\Administration\User\UserDialog.ts" />
-    <Content Include="Content\bootstrap.min.css.map" />
-    <Content Include="Content\bootstrap.css.map" />
-    <Content Include="Content\bootstrap-theme.min.css.map" />
-    <Content Include="Content\bootstrap-theme.css.map" />
     <Content Include="Content\toastr.scss" />
     <Content Include="Content\toastr.less" />
     <Content Include="Fonts\Simple-Line-Icons.woff2" />
@@ -1132,15 +1129,19 @@
     <Content Include="Fonts\ionicons.woff" />
     <Content Include="Fonts\ionicons.ttf" />
     <Content Include="Fonts\ionicons.eot" />
-    <Content Include="Fonts\glyphicons-halflings-regular.woff2" />
-    <Content Include="Fonts\glyphicons-halflings-regular.woff" />
-    <Content Include="Fonts\glyphicons-halflings-regular.ttf" />
-    <Content Include="Fonts\glyphicons-halflings-regular.eot" />
     <Content Include="Fonts\FontAwesome.otf" />
     <Content Include="Fonts\fontawesome-webfont.woff2" />
     <Content Include="Fonts\fontawesome-webfont.woff" />
     <Content Include="Fonts\fontawesome-webfont.ttf" />
     <Content Include="Fonts\fontawesome-webfont.eot" />
+    <Content Include="Fonts\glyphicons-halflings-regular.woff2" />
+    <Content Include="Fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="Fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="Fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="Content\bootstrap.min.css.map" />
+    <Content Include="Content\bootstrap.css.map" />
+    <Content Include="Content\bootstrap-theme.min.css.map" />
+    <Content Include="Content\bootstrap-theme.css.map" />
     <None Include="Modules\Common\Imports\ServerTypings\ServerTypings.log">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
